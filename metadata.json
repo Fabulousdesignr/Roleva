@@ -1,0 +1,6 @@
+{
+  "name": "Roleva",
+  "description": "AI Resume Intelligence Platform to tailor resumes to specific job roles using match scoring, resume improvements, and resume style recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
