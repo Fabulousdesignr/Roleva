@@ -1,7 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 80" width="340" height="80">
-  <!-- Yellow Rounded Square with bold black letter R inside -->
-  <rect x="5" y="5" width="70" height="70" rx="18" fill="#FFE600" />
-  <text x="40" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="52" fill="#000000" text-anchor="middle">R</text>
-  <!-- Wordmark 'Roleva.' in dark slate and yellow -->
-  <text x="92" y="54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="46" fill="#0F172A" letter-spacing="-1">Roleva<tspan fill="#FFE600">.</tspan></text>
+  <rect x="5" y="5" width="70" height="70" rx="18" fill="#4F46E5" />
+  <text x="40" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="52" fill="#FFFFFF" text-anchor="middle">R</text>
+  <text x="92" y="54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="46" fill="#0F172A" letter-spacing="-1">Roleva<tspan fill="#4F46E5">.</tspan></text>
 </svg>

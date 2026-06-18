@@ -364,20 +364,51 @@ Follow these core service features requirements:
       ]
     };
 
+    // Resilient Exponential Backoff Retry engine inside analyze
+    const executeWithRetry = async (modelName: string, maxRetries = 3, initialDelayMs = 1000) => {
+      let attempt = 0;
+      while (true) {
+        try {
+          return await ai.models.generateContent({
+            model: modelName,
+            contents: contentsParts,
+            config: {
+              systemInstruction,
+              responseMimeType: "application/json",
+              responseSchema: analysisResponseSchema
+            }
+          });
+        } catch (error: any) {
+          attempt++;
+          const errorMsg = String(error?.message || error?.status || error || "").toLowerCase();
+          const isTransient = 
+            errorMsg.includes("503") || 
+            errorMsg.includes("500") || 
+            errorMsg.includes("unavailable") || 
+            errorMsg.includes("overloaded") || 
+            errorMsg.includes("rate") || 
+            errorMsg.includes("limit") || 
+            errorMsg.includes("quota") || 
+            errorMsg.includes("busy") ||
+            errorMsg.includes("demand");
+
+          if (attempt > maxRetries || !isTransient) {
+            throw error;
+          }
+          
+          const delay = initialDelayMs * Math.pow(2, attempt - 1);
+          console.warn(`[Roleva Vercel API] Gemini ${modelName} call failed (Transient). Retrying attempt ${attempt}/${maxRetries} in ${delay}ms. Error: ${error?.message || error}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    };
+
     let response;
     try {
-      console.log("[Roleva Vercel API] Dispatching primary analysis request via gemini-3.5-flash...");
-      response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: contentsParts,
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: analysisResponseSchema
-        }
-      });
+      console.log("[Roleva Vercel API] Dispatching primary analysis request via gemini-3.5-flash (with robust retry)...");
+      response = await executeWithRetry("gemini-3.5-flash", 3, 1000);
     } catch (firstError: any) {
-      console.warn("[Roleva Vercel API] Primary model generation encountered error, evaluating fallback suitability:", firstError);
+      console.warn("[Roleva Vercel API] Primary model generation encountered persistent errors, evaluating fallback suitability:", firstError);
       const errorMsg = String(firstError?.message || firstError?.status || firstError || "").toLowerCase();
 
       // Check if error represents a transient overload or demand spike exception
@@ -393,17 +424,9 @@ Follow these core service features requirements:
         errorMsg.includes("exhausted");
 
       if (isUnavailable) {
-        console.log("[Roleva Vercel API] Primary model unavailable. Initiating graceful fallback recovery with highly stable 'gemini-3.1-flash-lite'...");
+        console.log("[Roleva Vercel API] Primary model unavailable after retries. Initiating stable 'gemini-3.1-flash-lite' fallback (with retry resilience)...");
         try {
-          response = await ai.models.generateContent({
-            model: "gemini-3.1-flash-lite", // Reliable non-deprecated lite model for structural text logic
-            contents: contentsParts,
-            config: {
-              systemInstruction,
-              responseMimeType: "application/json",
-              responseSchema: analysisResponseSchema
-            }
-          });
+          response = await executeWithRetry("gemini-3.1-flash-lite", 2, 1000);
         } catch (secondError: any) {
           console.error("[Roleva Vercel API] Gracious fallback 'gemini-3.1-flash-lite' failed too:", secondError);
           throw new Error(`The resume intelligence model is experiencing high demand. Please try again in a few moments. Details: ${secondError.message || secondError}`);
