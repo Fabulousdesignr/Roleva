@@ -32,14 +32,28 @@ app.use(express.urlencoded({ extended: true, limit: "15mb" }));
         });
       }
 
-      const ai = new GoogleGenAI({
-        apiKey,
+      const sdkOptions: any = {
         httpOptions: {
           headers: {
             "User-Agent": "aistudio-build",
           },
         },
-      });
+      };
+
+      const originalEnvKey = process.env.GEMINI_API_KEY;
+      if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
+        // Remove the key from the environment so the SDK constructor doesn't read it under the hood
+        delete process.env.GEMINI_API_KEY;
+        sdkOptions.apiKey = "";
+        sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
+      } else {
+        sdkOptions.apiKey = apiKey;
+      }
+
+      const ai = new GoogleGenAI(sdkOptions);
+      if (originalEnvKey) {
+        process.env.GEMINI_API_KEY = originalEnvKey;
+      }
 
       let textToParse = "";
       let hasPdfBytes = false;
@@ -202,14 +216,28 @@ Do NOT invent, hallucinate, or exaggerate metrics. Fill with empty string/arrays
       }
 
       // Initialize Google GenAI client with correct client header and config
-      const ai = new GoogleGenAI({
-        apiKey,
+      const sdkOptions: any = {
         httpOptions: {
           headers: {
             "User-Agent": "aistudio-build",
           },
         },
-      });
+      };
+
+      const originalEnvKey = process.env.GEMINI_API_KEY;
+      if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
+        // Remove the key from the environment so the SDK constructor doesn't read it under the hood
+        delete process.env.GEMINI_API_KEY;
+        sdkOptions.apiKey = "";
+        sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
+      } else {
+        sdkOptions.apiKey = apiKey;
+      }
+
+      const ai = new GoogleGenAI(sdkOptions);
+      if (originalEnvKey) {
+        process.env.GEMINI_API_KEY = originalEnvKey;
+      }
 
       // Prepare multi-modal or text contents list
       const contentsParts: any[] = [];

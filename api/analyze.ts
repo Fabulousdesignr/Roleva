@@ -23,14 +23,21 @@ export default async function handler(req: Request, res: Response) {
     }
 
     // Initialize Google GenAI client with correct client header and config
-    const ai = new GoogleGenAI({
-      apiKey,
+    const sdkOptions: any = {
       httpOptions: {
         headers: {
           "User-Agent": "aistudio-build",
         },
       },
-    });
+    };
+
+    if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
+      sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
+    } else {
+      sdkOptions.apiKey = apiKey;
+    }
+
+    const ai = new GoogleGenAI(sdkOptions);
 
     // Prepare multi-modal or text contents list
     const contentsParts: any[] = [];

@@ -413,14 +413,21 @@ export default async function handler(req: Request, res: Response) {
       });
     }
 
-    const ai = new GoogleGenAI({
-      apiKey,
+    const sdkOptions: any = {
       httpOptions: {
         headers: {
           "User-Agent": "aistudio-build",
         },
       },
-    });
+    };
+
+    if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
+      sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
+    } else {
+      sdkOptions.apiKey = apiKey;
+    }
+
+    const ai = new GoogleGenAI(sdkOptions);
 
     const extractionSystemInstruction = `You are Roleva ATS Resume Import Engine, a professional parser.
 Your single objective is to take the provided resume data and parse it into an extremely clean, standardized JSON format.
