@@ -1,13 +1,10 @@
 import type { Request, Response } from "express";
 import { GoogleGenAI, Type } from "@google/genai";
 import * as mammothModule from "mammoth";
-import * as pdfModule from "pdf-parse";
 
 // Resolve CommonJS/ESM interop safely for Vercel Serverless
 // @ts-ignore
 const mammoth = mammothModule.default || mammothModule;
-// @ts-ignore
-const pdf = pdfModule.default || pdfModule;
 
 interface StructuredResume {
   name: string;
@@ -351,6 +348,9 @@ export default async function handler(req: Request, res: Response) {
         // Extract raw text locally from PDF as baseline/fallback
         try {
           const buffer = Buffer.from(fileData, "base64");
+          const pdfModule = await import("pdf-parse");
+          // @ts-ignore
+          const pdf = pdfModule.default || pdfModule;
           const parsedPdf = await pdf(buffer);
           textToParse = parsedPdf.text || "";
         } catch (pdfParseErr) {
@@ -543,6 +543,9 @@ Do NOT invent, hallucinate, or exaggerate metrics. Fill with empty string/arrays
           // If PDF, parse locally. Otherwise use mammoth docx, or raw string
           const fileExtension = req.body.fileName ? req.body.fileName.split(".").pop()?.toLowerCase() : "";
           if (req.body.mimeType?.includes("pdf") || fileExtension === "pdf") {
+            const pdfModule = await import("pdf-parse");
+            // @ts-ignore
+            const pdf = pdfModule.default || pdfModule;
             const parsedPdf = await pdf(buffer);
             textToParse = parsedPdf.text || "";
           } else {
