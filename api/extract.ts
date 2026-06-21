@@ -1,8 +1,13 @@
 import type { Request, Response } from "express";
 import { GoogleGenAI, Type } from "@google/genai";
-import mammoth from "mammoth";
+import * as mammothModule from "mammoth";
+import * as pdfModule from "pdf-parse";
+
+// Resolve CommonJS/ESM interop safely for Vercel Serverless
 // @ts-ignore
-import pdf from "pdf-parse";
+const mammoth = mammothModule.default || mammothModule;
+// @ts-ignore
+const pdf = pdfModule.default || pdfModule;
 
 interface StructuredResume {
   name: string;
