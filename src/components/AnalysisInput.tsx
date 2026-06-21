@@ -161,22 +161,28 @@ export default function AnalysisInput({
     try {
       const fileName = file.name;
       const fileExtension = fileName.split(".").pop()?.toLowerCase();
+
+      // Let's check for PDF uploads early
+      if (fileExtension === "pdf") {
+        setIsExtracting(false);
+        setErrorMsg("PDF uploads are temporarily unavailable in this version. Please upload a DOC/DOCX file or paste your CV text.");
+        return;
+      }
+
       let mimeType = file.type;
 
       // Fix empty mime fallback
       if (!mimeType) {
-        if (fileExtension === "docx") {
+        if (fileExtension === "docx" || fileExtension === "doc") {
           mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        } else if (fileExtension === "pdf") {
-          mimeType = "application/pdf";
         } else {
           mimeType = "text/plain";
         }
       }
 
-      if (fileExtension !== "pdf" && fileExtension !== "docx" && fileExtension !== "txt" && fileExtension !== "md") {
+      if (fileExtension !== "docx" && fileExtension !== "doc" && fileExtension !== "txt" && fileExtension !== "md") {
         setIsExtracting(false);
-        setErrorMsg("Roleva currently supports PDF and DOCX documents as the primary inputs. Please upload a structured file.");
+        setErrorMsg("Roleva currently supports DOC and DOCX documents as the primary inputs. Please upload a structured file.");
         return;
       }
 
@@ -221,7 +227,7 @@ export default function AnalysisInput({
           onSaveMasterResume(cleanProfile, fileName);
           setSubStep(2); // Jump to interactive manual editing
         } catch (innerErr: any) {
-          setErrorMsg(innerErr?.message || "Could not successfully extract resume features. Please try another PDF or start with a blank state.");
+          setErrorMsg(innerErr?.message || "Could not successfully extract resume features. Please try another file or start with a blank state.");
         } finally {
           setIsExtracting(false);
         }
@@ -461,7 +467,7 @@ export default function AnalysisInput({
           />
           
           {[
-            { id: 1, name: "Upload", desc: "PDF or DOCX ingest" },
+            { id: 1, name: "Upload", desc: "DOC or DOCX ingest" },
             { id: 2, name: "Review", desc: "Verify extracted profile" },
             { id: 3, name: "Targeting", desc: "Define job & style" }
           ].map((s) => {
@@ -562,7 +568,7 @@ export default function AnalysisInput({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.docx,.txt,.md"
+                accept=".doc,.docx,.txt,.md"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -570,10 +576,10 @@ export default function AnalysisInput({
                 <Upload className="w-8 h-8" />
               </div>
               <p className="text-sm font-extrabold text-slate-800">
-                Drag and drop your PDF or DOCX file here
+                Drag and drop your DOC or DOCX file here
               </p>
               <p className="text-xs text-slate-400 mt-2 max-w-md">
-                Upload your most recent resume. Roleva will automatically extract your information.
+                Supported formats: DOC / DOCX / Paste Text (txt, md)
               </p>
               <button 
                 type="button" 

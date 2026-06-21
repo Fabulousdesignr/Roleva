@@ -26,34 +26,14 @@ app.use(express.urlencoded({ extended: true, limit: "15mb" }));
       const { fileData, mimeType, fileName, rawText } = req.body;
       
       const apiKey = process.env.GEMINI_API_KEY;
+
       if (!apiKey) {
-        return res.status(500).json({
-          error: "GEMINI_API_KEY is not configured in environment variables. Please add it to your Secrets."
-        });
+        throw new Error("Missing GEMINI_API_KEY");
       }
 
-      const sdkOptions: any = {
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          },
-        },
-      };
-
-      const originalEnvKey = process.env.GEMINI_API_KEY;
-      if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
-        // Remove the key from the environment so the SDK constructor doesn't read it under the hood
-        delete process.env.GEMINI_API_KEY;
-        sdkOptions.apiKey = "";
-        sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
-      } else {
-        sdkOptions.apiKey = apiKey;
-      }
-
-      const ai = new GoogleGenAI(sdkOptions);
-      if (originalEnvKey) {
-        process.env.GEMINI_API_KEY = originalEnvKey;
-      }
+      const ai = new GoogleGenAI({
+        apiKey
+      });
 
       let textToParse = "";
       let hasPdfBytes = false;
@@ -209,35 +189,14 @@ Do NOT invent, hallucinate, or exaggerate metrics. Fill with empty string/arrays
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
+
       if (!apiKey) {
-        return res.status(500).json({
-          error: "GEMINI_API_KEY is not configured in environment variables. Please add it to your Secrets."
-        });
+        throw new Error("Missing GEMINI_API_KEY");
       }
 
-      // Initialize Google GenAI client with correct client header and config
-      const sdkOptions: any = {
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          },
-        },
-      };
-
-      const originalEnvKey = process.env.GEMINI_API_KEY;
-      if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
-        // Remove the key from the environment so the SDK constructor doesn't read it under the hood
-        delete process.env.GEMINI_API_KEY;
-        sdkOptions.apiKey = "";
-        sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
-      } else {
-        sdkOptions.apiKey = apiKey;
-      }
-
-      const ai = new GoogleGenAI(sdkOptions);
-      if (originalEnvKey) {
-        process.env.GEMINI_API_KEY = originalEnvKey;
-      }
+      const ai = new GoogleGenAI({
+        apiKey
+      });
 
       // Prepare multi-modal or text contents list
       const contentsParts: any[] = [];

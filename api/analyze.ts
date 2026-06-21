@@ -16,28 +16,14 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
+
     if (!apiKey) {
-      return res.status(500).json({
-        error: "GEMINI_API_KEY is not configured in environment variables. Please add it to your Secrets."
-      });
+      throw new Error("Missing GEMINI_API_KEY");
     }
 
-    // Initialize Google GenAI client with correct client header and config
-    const sdkOptions: any = {
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    };
-
-    if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
-      sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
-    } else {
-      sdkOptions.apiKey = apiKey;
-    }
-
-    const ai = new GoogleGenAI(sdkOptions);
+    const ai = new GoogleGenAI({
+      apiKey
+    });
 
     // Prepare multi-modal or text contents list
     const contentsParts: any[] = [];

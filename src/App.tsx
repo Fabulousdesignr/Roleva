@@ -137,7 +137,7 @@ export default function App() {
       setResults(data);
 
       // Save custom/final resume as master, or update it
-      saveMasterResume(structuredResume, masterResumeFileName || "custom_resume.pdf");
+      saveMasterResume(structuredResume, masterResumeFileName || "custom_resume.docx");
 
       // Add to History
       const title = data.extractedJobTitle || "Product Designer";

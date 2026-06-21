@@ -331,33 +331,24 @@ export default async function handler(req: Request, res: Response) {
   try {
     const { fileData, mimeType, fileName, rawText } = req.body;
     
-    // Parse raw text, PDF or DOCX into plain textToParse
+    // Check for PDF upload early
+    const fileExtension = fileName ? fileName.split(".").pop()?.toLowerCase() : "";
+    if (
+      (mimeType && mimeType.includes("pdf")) ||
+      fileExtension === "pdf"
+    ) {
+      return res.status(400).json({
+        error: "PDF uploads are temporarily unavailable in this version. Please upload a DOC/DOCX file or paste your CV text."
+      });
+    }
+
+    // Parse raw text or DOCX into plain textToParse
     let textToParse = "";
-    let hasPdfBytes = false;
-    let pdfBase64 = "";
 
     if (rawText && rawText.trim()) {
       textToParse = rawText;
     } else if (fileData && mimeType) {
-      const fileExtension = fileName ? fileName.split(".").pop()?.toLowerCase() : "";
-
-      if (mimeType.includes("pdf") || fileExtension === "pdf") {
-        hasPdfBytes = true;
-        pdfBase64 = fileData;
-        
-        // Extract raw text locally from PDF as baseline/fallback
-        try {
-          const buffer = Buffer.from(fileData, "base64");
-          const pdfModule = await import("pdf-parse");
-          // @ts-ignore
-          const pdf = pdfModule.default || pdfModule;
-          const parsedPdf = await pdf(buffer);
-          textToParse = parsedPdf.text || "";
-        } catch (pdfParseErr) {
-          console.error("[Roleva Vercel API] Local PDF text extraction failed:", pdfParseErr);
-          textToParse = "";
-        }
-      } else if (
+      if (
         mimeType.includes("wordprocessingml") || 
         mimeType.includes("docx") || 
         fileExtension === "docx"
@@ -382,9 +373,9 @@ export default async function handler(req: Request, res: Response) {
       }
     }
 
-    if (!hasPdfBytes && (!textToParse || !textToParse.trim())) {
+    if (!textToParse || !textToParse.trim()) {
       return res.status(400).json({
-        error: "No readable resume content provided. Please upload a PDF, DOCX or enter text."
+        error: "No readable resume content provided. Please upload a DOCX or enter text."
       });
     }
 
@@ -412,27 +403,14 @@ export default async function handler(req: Request, res: Response) {
 
     // Otherwise, run Gemini with robust retry & backoff
     const apiKey = process.env.GEMINI_API_KEY;
+
     if (!apiKey) {
-      return res.status(500).json({
-        error: "GEMINI_API_KEY is not configured in environment variables. Please add it to your Secrets."
-      });
+      throw new Error("Missing GEMINI_API_KEY");
     }
 
-    const sdkOptions: any = {
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    };
-
-    if (apiKey.startsWith("ya29.") || apiKey.startsWith("AQ.")) {
-      sdkOptions.httpOptions.headers["Authorization"] = `Bearer ${apiKey}`;
-    } else {
-      sdkOptions.apiKey = apiKey;
-    }
-
-    const ai = new GoogleGenAI(sdkOptions);
+    const ai = new GoogleGenAI({
+      apiKey
+    });
 
     const extractionSystemInstruction = `You are Roleva ATS Resume Import Engine, a professional parser.
 Your single objective is to take the provided resume data and parse it into an extremely clean, standardized JSON format.
@@ -497,22 +475,9 @@ Do NOT invent, hallucinate, or exaggerate metrics. Fill with empty string/arrays
       required: ["name", "contactInfo", "summary", "skills", "experiences", "education", "certifications"]
     };
 
-    const contentsParts: any[] = [];
-    if (hasPdfBytes) {
-      contentsParts.push({
-        inlineData: {
-          data: pdfBase64,
-          mimeType: mimeType || "application/pdf"
-        }
-      });
-      contentsParts.push({
-        text: "Parse and extract the above PDF resume document into the JSON response schema."
-      });
-    } else {
-      contentsParts.push({
-        text: `CANDIDATE RESUME TEXT:\n${textToParse}\n\nParse and extract the above resume text into the JSON response schema.`
-      });
-    }
+    const contentsParts: any[] = [{
+      text: `CANDIDATE RESUME TEXT:\n${textToParse}\n\nParse and extract the above resume text into the JSON response schema.`
+    }];
 
     // Task 2: Switch to "gemini-2.5-flash" as requested by user!
     console.log("[Roleva Vercel API] Extracting resume data via gemini-2.5-flash (with robust retry logic)...");
@@ -540,18 +505,8 @@ Do NOT invent, hallucinate, or exaggerate metrics. Fill with empty string/arrays
       if (!textToParse && fileData) {
         try {
           const buffer = Buffer.from(fileData, "base64");
-          // If PDF, parse locally. Otherwise use mammoth docx, or raw string
-          const fileExtension = req.body.fileName ? req.body.fileName.split(".").pop()?.toLowerCase() : "";
-          if (req.body.mimeType?.includes("pdf") || fileExtension === "pdf") {
-            const pdfModule = await import("pdf-parse");
-            // @ts-ignore
-            const pdf = pdfModule.default || pdfModule;
-            const parsedPdf = await pdf(buffer);
-            textToParse = parsedPdf.text || "";
-          } else {
-            const result = await mammoth.extractRawText({ buffer });
-            textToParse = result.value;
-          }
+          const result = await mammoth.extractRawText({ buffer });
+          textToParse = result.value;
         } catch {}
       }
       
